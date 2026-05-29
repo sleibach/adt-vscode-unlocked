@@ -1,0 +1,6 @@
+# build output (the committed artifact is tools/adt-unlock.jar)
+/out/
+*.class
+
+# editor/OS noise
+.DS_Store
