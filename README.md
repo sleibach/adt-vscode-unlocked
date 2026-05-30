@@ -29,6 +29,8 @@ original patch code and scripts, which operate on *your own* local copy. You
 are solely responsible for complying with the SAP Developer License Agreement
 and any agreements with SAP and/or your employer.
 
+**If you choose to use it, you do so entirely at your own risk.**
+
 ## Why
 
 In v1.0.0 the extension only supports SSO/SNC for RFC destinations:
