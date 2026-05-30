@@ -1,3 +1,24 @@
+NOTICE
+======
+
+The MIT license below applies ONLY to the original patch code, scripts, and
+documentation authored in this repository. It does NOT apply to, and grants no
+rights in, SAP's "ABAP Development Tools for VS Code" extension or any other
+SAP software, APIs, or tools.
+
+The SAP extension is licensed under the SAP Developer License Agreement
+(version 3.2), which — in Section 2 — prohibits reverse engineering,
+disassembly, creating derivative works, and using the tools to modify SAP
+software or product functionality. Using the scripts in this repository to
+patch that extension may violate the SAP Developer License Agreement.
+
+The materials in this repository are provided for educational and research
+purposes only. You use them entirely at your own risk and are solely
+responsible for compliance with the SAP Developer License Agreement and any
+other applicable agreements. No SAP code is included or redistributed here.
+
+-------------------------------------------------------------------------------
+
 MIT License
 
 Copyright (c) 2026 Sören Leibach

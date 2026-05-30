@@ -4,6 +4,31 @@ Community patches that re-enable **RFC username/password (basic auth) logon** in
 
 > Unofficial. Not affiliated with or endorsed by SAP. These scripts patch *your* locally installed extension only; original files are backed up and fully restorable. Use at your own risk.
 
+## Important: license warning — read before using
+
+The official extension is **not** open source. It is licensed under the
+**SAP Developer License Agreement (v3.2)** (`LICENSE.txt` shipped inside the
+extension). Section 2 of that agreement prohibits, among other things:
+
+- decompiling, disassembling or reverse engineering the tools (except where
+  applicable law expressly allows it),
+- creating derivative works of or based on the tools, and
+- using the tools to modify existing SAP software or product functionality.
+
+These patches **disassemble and modify the shipped language-server bytecode and
+the extension bundle**, so applying them **very likely violates the SAP
+Developer License Agreement.**
+
+Treat this repository as a **technical proof-of-concept / research write-up** —
+not as something to run against a licensed installation, and not for production
+or commercial use. The proper fix is for SAP to add username/password RFC
+support natively.
+
+This repo does **not** contain or redistribute any SAP code: it ships only the
+original patch code and scripts, which operate on *your own* local copy. You
+are solely responsible for complying with the SAP Developer License Agreement
+and any agreements with SAP and/or your employer.
+
 ## Why
 
 In v1.0.0 the extension only supports SSO/SNC for RFC destinations:
@@ -76,4 +101,4 @@ The prebuilt `tools/adt-unlock.jar` is committed so install needs no toolchain. 
 
 ## License
 
-[MIT](LICENSE) for the patch code in this repository. The SAP extension itself is **not** redistributed.
+[MIT](LICENSE) for the patch code in this repository. The SAP extension itself is **not** redistributed, and MIT grants no rights in it — see the [license warning](#important-license-warning--read-before-using) above regarding the SAP Developer License Agreement.
