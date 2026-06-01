@@ -52,17 +52,27 @@ Three small, idempotent changes to the installed extension:
 
 ## Requirements
 
-- macOS, Apple Silicon (arm64)
+- macOS, Apple Silicon (arm64), or Windows 10/11
 - The official **ABAP Development Tools** extension installed in Cursor or VS Code (`SAPSE.adt-vscode`, v1.0.0)
-- `python3` (preinstalled on macOS)
+- Python 3
 - No JDK required — the patcher runs on the JRE bundled inside the extension.
 
 ## Install
+
+### macOS / Apple Silicon
 
 ```bash
 git clone https://github.com/sleibach/adt-vscode-unlocked.git
 cd adt-vscode-unlocked
 ./install.sh
+```
+
+### Windows
+
+```powershell
+git clone https://github.com/sleibach/adt-vscode-unlocked.git
+cd adt-vscode-unlocked
+.\install.ps1
 ```
 
 Then reload the editor window: Command Palette → **Developer: Reload Window**.
@@ -74,8 +84,18 @@ On **Open Objects**, you'll be prompted for your password, and the connection is
 
 ## Uninstall
 
+### macOS / Apple Silicon
+
 ```bash
 ./uninstall.sh
+```
+
+Restores the original files from the `*.orig` backups created at install time, then reload the window.
+
+### Windows
+
+```powershell
+.\uninstall.ps1
 ```
 
 Restores the original files from the `*.orig` backups created at install time, then reload the window.
@@ -91,8 +111,16 @@ See [`src/AdtUnlock.java`](src/AdtUnlock.java) and [`src/com/sap/adt/patch/Basic
 
 The prebuilt `tools/adt-unlock.jar` is committed so install needs no toolchain. To rebuild it (requires JDK 21+ and the extension installed, for the compile classpath):
 
+### macOS / Apple Silicon
+
 ```bash
 ./build.sh
+```
+
+### Windows
+
+```powershell
+.\build.ps1
 ```
 
 ## Caveats
