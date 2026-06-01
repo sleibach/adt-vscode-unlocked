@@ -42,7 +42,16 @@ if (-not $jar) {
 }
 
 $ext = Get-ExtensionRoot
-$plugins = Join-Path $ext 'adt-ls'
+
+# The Eclipse plugin jars live deep under adt-ls/<platform>/.../plugins, so
+# locate the language-server jar recursively and use its folder as classpath.
+$lsJar = Get-ChildItem -Path (Join-Path $ext 'adt-ls') -Recurse -File -Filter 'com.sap.adt.ls_*.jar' |
+  Where-Object { $_.FullName -notmatch '\.(orig|bak\d*)$' } |
+  Select-Object -First 1
+if (-not $lsJar) {
+  throw 'ERROR: language-server jar (com.sap.adt.ls_*.jar) not found (needed for classpath).'
+}
+$plugins = Split-Path -Parent $lsJar.FullName
 
 $out = Join-Path $here 'out'
 if (Test-Path $out) {
@@ -51,9 +60,10 @@ if (Test-Path $out) {
 New-Item -ItemType Directory -Path $out | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $here 'tools') -Force | Out-Null
 
-& $javac.Source --release 21 -cp "$plugins\*" -d $out `
-  (Join-Path $here 'src\com\sap\adt\patch\BasicAuthRfcLogon.java') `
-  (Join-Path $here 'src\AdtUnlock.java')
+$sources = Get-ChildItem -Path (Join-Path $here 'src') -Recurse -File -Filter '*.java' |
+  ForEach-Object { $_.FullName }
+
+& $javac.Source --release 21 -cp "$plugins\*" -d $out @sources
 
 $classFiles = Get-ChildItem -Path $out -Recurse -File -Filter '*.class' |
   ForEach-Object { $_.FullName.Substring($out.Length + 1).Replace('\', '/') }
