@@ -42,13 +42,14 @@ For the many on-prem ABAP systems that authenticate with **username/password ove
 
 ## What it does
 
-Three small, idempotent changes to the installed extension:
+Four small, idempotent changes to the installed extension:
 
 1. **Show non-SSO RFC systems** in the destination wizard
    (`AdtLsDestinationService.listSystemConfigurations`).
 2. **Prompt for a password and log on** for non-SSO RFC destinations instead of failing — via an injected `com.sap.adt.patch.BasicAuthRfcLogon` helper that reuses the existing `AuthenticationToken` + `ensureLoggedOn` flow (`AdtLsLogonService`).
 3. **Register the password input handler** the UI already ships but never wires up
    (`extension.js`: `adtLs/destinations/requestLogonInput` → `promptLogonInput`).
+4. **Support classic ABAP object types** instead of opening them read-only. Stock v1.0.0 gates `AdtLsObjectTypeUtil.isObjectTypeSupported` on a hard-coded allowlist of ~23 RAP/core types, so classic objects (programs, tables, data elements, …) fall back to a read-only `<name>.<type>.jsonc` view. An injected `com.sap.adt.patch.ObjectTypeProbe` helper drops the allowlist requirement and keeps only the original resource check (a resolvable ADT resource; Blue types must also be available on the backend), so any type with a real resource opens as a real object — types without one still degrade to `.jsonc`, so nothing regresses. Programs additionally get an editable `.prog.abap` source mapping (`AffSfsMapper`); other newly-supported types open via their server-driven representation.
 
 ## Requirements
 
@@ -103,9 +104,9 @@ Restores the original files from the `*.orig` backups created at install time, t
 ## How it works
 
 - `scripts/patch_extension_js.py` inserts one `onRequest(...)` registration next to the existing browser-logon one.
-- `tools/adt-unlock.jar` (source in [`src/`](src)) opens the language-server jar, rewrites **only** the two target methods with ASM (every other method is copied verbatim so stack-map frames stay valid), injects the helper class, and repackages the jar.
+- `tools/adt-unlock.jar` (source in [`src/`](src)) opens the language-server jar, rewrites **only** the three target methods with ASM (every other method is copied verbatim so stack-map frames stay valid), injects the helper classes, and repackages the jar.
 
-See [`src/AdtUnlock.java`](src/AdtUnlock.java) and [`src/com/sap/adt/patch/BasicAuthRfcLogon.java`](src/com/sap/adt/patch/BasicAuthRfcLogon.java).
+See [`src/AdtUnlock.java`](src/AdtUnlock.java), [`src/com/sap/adt/patch/BasicAuthRfcLogon.java`](src/com/sap/adt/patch/BasicAuthRfcLogon.java) and [`src/com/sap/adt/patch/ObjectTypeProbe.java`](src/com/sap/adt/patch/ObjectTypeProbe.java).
 
 ## Rebuild from source (optional)
 
@@ -127,7 +128,8 @@ The prebuilt `tools/adt-unlock.jar` is committed so install needs no toolchain. 
 
 - Pinned to extension build **v1.0.0** (`...202605281240`). A new extension release overwrites these files — just re-run `./install.sh`, or wait for SAP to ship basic auth natively.
 - The password is requested on each logon (not persisted).
-- Editing/saving classic objects (e.g. programs) is gated separately by the extension and is **not** addressed here.
+- Classic objects now open as real objects (see change 4), but only programs get an editable `.prog.abap` source mapping; other newly-unlocked types rely on the extension's server-driven representation, and full edit/save support for every classic type is not guaranteed.
+- The object-type probe writes a decision log to `~/adt-unlock-objtype-probe.log` for troubleshooting.
 
 ## License
 

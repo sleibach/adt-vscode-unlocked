@@ -20,8 +20,7 @@ PLUGINS="$EXT/adt-ls/macosx/cocoa/aarch64/Adt-ls.app/Contents/Eclipse/plugins"
 
 rm -rf "$HERE/out"; mkdir -p "$HERE/out" "$HERE/tools"
 javac --release 21 -cp "$PLUGINS/*" -d "$HERE/out" \
-  "$HERE/src/com/sap/adt/patch/BasicAuthRfcLogon.java" \
-  "$HERE/src/AdtUnlock.java"
+  $(find "$HERE/src" -name '*.java')
 ( cd "$HERE/out" && jar cfe "$HERE/tools/adt-unlock.jar" AdtUnlock \
     $(find . -name '*.class' | sed 's|^\./||') )
 echo "built: $HERE/tools/adt-unlock.jar"

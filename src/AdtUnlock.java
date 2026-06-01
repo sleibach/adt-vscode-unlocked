@@ -29,6 +29,18 @@ public class AdtUnlock {
     static final String DEST_CLASS  = "com/sap/adt/ls/internal/project/AdtLsDestinationService";
     static final String HELPER      = "com/sap/adt/patch/BasicAuthRfcLogon";
 
+    // Object-type support gate. isObjectTypeSupported() decides whether a repo-tree
+    // object opens as real source or as the read-only "<name>.<type>.jsonc" fallback.
+    static final String OBJTYPE_CLASS  = "com/sap/adt/ls/internal/objecttypeinfo/AdtLsObjectTypeUtil";
+    static final String OBJTYPE_METHOD = "isObjectTypeSupported";
+    static final String OBJTYPE_DESC   =
+        "(Lcom/sap/adt/tools/core/objecttype/IAdtObjectTypeInfo;"
+        + "Lorg/eclipse/core/resources/IProject;)Z";
+    static final String OBJTYPE_HELPER = "com/sap/adt/patch/ObjectTypeProbe";
+
+    // Helper classes to bundle/inject into the patched jar.
+    static final String[] HELPERS = { HELPER, OBJTYPE_HELPER };
+
     static final String LOGON_METHOD = "lambda$1";
     static final String LOGON_DESC =
         "(Ljava/lang/String;Lorg/eclipse/core/runtime/IProgressMonitor;"
@@ -85,13 +97,23 @@ public class AdtUnlock {
             if (out != null) { entries.put(DEST_CLASS + ".class", out); destPatched = true; }
         }
 
-        byte[] helperBytes;
-        try (InputStream is = AdtUnlock.class.getResourceAsStream("/" + HELPER + ".class")) {
-            if (is == null) throw new IllegalStateException("Helper class not bundled in tool jar: " + HELPER);
-            helperBytes = is.readAllBytes();
+        byte[] objType = entries.get(OBJTYPE_CLASS + ".class");
+        boolean objTypePatched = false;
+        if (objType != null) {
+            byte[] out = transformClass(objType, OBJTYPE_METHOD, OBJTYPE_DESC, AdtUnlock::patchObjectTypeSupported, cl);
+            if (out != null) { entries.put(OBJTYPE_CLASS + ".class", out); objTypePatched = true; }
         }
-        boolean helperAdded = !entries.containsKey(HELPER + ".class");
-        entries.put(HELPER + ".class", helperBytes);
+
+        boolean helperAdded = false;
+        for (String helper : HELPERS) {
+            byte[] helperBytes;
+            try (InputStream is = AdtUnlock.class.getResourceAsStream("/" + helper + ".class")) {
+                if (is == null) throw new IllegalStateException("Helper class not bundled in tool jar: " + helper);
+                helperBytes = is.readAllBytes();
+            }
+            if (!entries.containsKey(helper + ".class")) helperAdded = true;
+            entries.put(helper + ".class", helperBytes);
+        }
 
         Path tmp = Files.createTempFile(pluginsDir, "adt-unlock-", ".jar");
         try (JarOutputStream jos = new JarOutputStream(Files.newOutputStream(tmp))) {
@@ -108,7 +130,8 @@ public class AdtUnlock {
 
         System.out.println("listSystemConfigurations (show non-SSO RFC): " + (destPatched ? "patched" : "already patched / not found"));
         System.out.println("RFC basic-auth logon (lambda$1):           " + (logonPatched ? "patched" : "already patched / not found"));
-        System.out.println("BasicAuthRfcLogon helper:                  " + (helperAdded ? "added" : "updated"));
+        System.out.println("isObjectTypeSupported (object-type probe): " + (objTypePatched ? "patched" : "already patched / not found"));
+        System.out.println("Injected helpers:                          " + (helperAdded ? "added" : "updated"));
         System.out.println("OK: " + lsJar);
     }
 
@@ -171,6 +194,34 @@ public class AdtUnlock {
             }
         }
         return false;
+    }
+
+    /**
+     * Replace the whole body of isObjectTypeSupported(info, project) with a
+     * delegation to ObjectTypeProbe.isSupported(this, info, project). Returns
+     * false (no change) if already delegating, for idempotency.
+     */
+    static boolean patchObjectTypeSupported(MethodNode mn) {
+        for (AbstractInsnNode p = mn.instructions.getFirst(); p != null; p = p.getNext()) {
+            if (p instanceof MethodInsnNode mi && p.getOpcode() == Opcodes.INVOKESTATIC
+                && OBJTYPE_HELPER.equals(mi.owner) && "isSupported".equals(mi.name)) {
+                return false; // already patched
+            }
+        }
+        InsnList body = new InsnList();
+        body.add(new VarInsnNode(Opcodes.ALOAD, 0)); // this (AdtLsObjectTypeUtil)
+        body.add(new VarInsnNode(Opcodes.ALOAD, 1)); // info
+        body.add(new VarInsnNode(Opcodes.ALOAD, 2)); // project
+        body.add(new MethodInsnNode(Opcodes.INVOKESTATIC, OBJTYPE_HELPER, "isSupported",
+            "(L" + OBJTYPE_CLASS + ";"
+            + "Lcom/sap/adt/tools/core/objecttype/IAdtObjectTypeInfo;"
+            + "Lorg/eclipse/core/resources/IProject;)Z", false));
+        body.add(new InsnNode(Opcodes.IRETURN));
+        mn.instructions.clear();
+        mn.tryCatchBlocks.clear();
+        if (mn.localVariables != null) mn.localVariables.clear();
+        mn.instructions.add(body);
+        return true;
     }
 
     static AbstractInsnNode nextReal(AbstractInsnNode n) {
